@@ -1,0 +1,11 @@
+[package]
+name = "http3-client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = { version = "0.4", features = ["std"] }
+mio = { version = "0.8", features = ["net", "os-poll"] }
+quiche = "0.17.2"
+ring = "0.16"
+url = "1"
