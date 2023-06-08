@@ -45,7 +45,6 @@ fn main() {
 
     if args.len() != 1 {
         println!("Usage: {cmd} URL");
-        println!("\nSee tools/apps/ for more complete implementations.");
         return;
     }
 
