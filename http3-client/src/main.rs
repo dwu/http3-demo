@@ -143,7 +143,7 @@ fn main() {
     // Enable qlog when QLOGDIR env var is set
     if let Some(dir) = std::env::var_os("QLOGDIR") {
         let id = format!("{scid:?}");
-        let writer = make_qlog_writer(&dir, "client", &id);
+        let writer = make_qlog_writer(&dir, "http3-client", &id);
         conn.set_qlog(
             std::boxed::Box::new(writer),
             "http3-client qlog".to_string(),
