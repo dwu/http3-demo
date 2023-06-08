@@ -95,6 +95,7 @@ fn main() {
     config.set_initial_max_streams_uni(100);
     config.set_disable_active_migration(true);
 
+    // Config SSL key logging when SSLKEYLOGFILE env var is set
     let mut keylog = None;
 
     if let Some(keylog_path) = std::env::var_os("SSLKEYLOGFILE") {
@@ -132,10 +133,22 @@ fn main() {
         hex_dump(&scid)
     );
 
+    // Enable SSL keylog
     if let Some(keylog) = &mut keylog {
         if let Ok(keylog) = keylog.try_clone() {
             conn.set_keylog(Box::new(keylog));
         }
+    }
+
+    // Enable qlog when QLOGDIR env var is set
+    if let Some(dir) = std::env::var_os("QLOGDIR") {
+        let id = format!("{scid:?}");
+        let writer = make_qlog_writer(&dir, "client", &id);
+        conn.set_qlog(
+            std::boxed::Box::new(writer),
+            "http3-client qlog".to_string(),
+            format!("{} id={}", "http3-client qlog", id),
+        );
     }
 
     let (write, send_info) = conn.send(&mut out).expect("initial send failed");
@@ -374,4 +387,21 @@ pub fn hdrs_to_strings(hdrs: &[quiche::h3::Header]) -> Vec<(String, String)> {
             (name, value)
         })
         .collect()
+}
+
+pub fn make_qlog_writer(
+    dir: &std::ffi::OsStr, role: &str, id: &str,
+) -> std::io::BufWriter<std::fs::File> {
+    let mut path = std::path::PathBuf::from(dir);
+    let filename = format!("{role}-{id}.sqlog");
+    path.push(filename);
+
+    match std::fs::File::create(&path) {
+        Ok(f) => std::io::BufWriter::new(f),
+
+        Err(e) => panic!(
+            "Error creating qlog file attempted path was {:?}: {}",
+            path, e
+        ),
+    }
 }
