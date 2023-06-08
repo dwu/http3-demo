@@ -95,6 +95,11 @@ fn main() {
     config.set_initial_max_streams_uni(100);
     config.set_disable_active_migration(true);
 
+    // Enable GREASE only if required explicitly via GREASE env var for clearer traces
+    if std::env::var_os("GREASE").is_none() {
+        config.grease(false);
+    }
+
     // Config SSL key logging when SSLKEYLOGFILE env var is set
     let mut keylog = None;
 
