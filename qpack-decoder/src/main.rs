@@ -8,13 +8,11 @@ fn main() {
     let cmd = &args.next().unwrap();
 
     if args.len() != 1 {
-        println!("Usage: {cmd} <input-file>");
+        println!("Usage: {cmd} <header block as hex-string>");
         return;
     }
 
-    let inputfile = &args.next().unwrap();
-    let inputhexstring = std::fs::read_to_string(inputfile).unwrap();
-
+    let inputhexstring = &args.next().unwrap();
     let data = hex::decode(inputhexstring.trim()).unwrap();
 
     let mut dec = qpack::Decoder::new();
