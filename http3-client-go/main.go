@@ -90,7 +90,11 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("Response: %s", body)
+			fmt.Println("Reponse headers:")
+			for k, v := range rsp.Header {
+				fmt.Printf("  key=%s\n    value=%s\n", k, v)
+			}
+			fmt.Printf("Response body: %s", body)
 			wg.Done()
 		}(addr)
 	}
