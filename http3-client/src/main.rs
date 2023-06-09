@@ -148,10 +148,11 @@ fn main() {
     if let Some(dir) = std::env::var_os("QLOGDIR") {
         let id = format!("{scid:?}");
         let writer = make_qlog_writer(&dir, "http3-client", &id);
-        conn.set_qlog(
+        conn.set_qlog_with_level(
             std::boxed::Box::new(writer),
             "http3-client qlog".to_string(),
             format!("{} id={}", "http3-client qlog", id),
+            quiche::QlogLevel::Extra,
         );
     }
 
