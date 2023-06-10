@@ -1,6 +1,8 @@
 http3-client-go/http3-client-go
 http3-client-rust/target
 qpack-decoder/target
+quic-bench/cmd/client/client
+quic-bench/cmd/server/server
 quic-minimal/quic-minimal
 quic-minimal/*.qlog
 qlog/*
