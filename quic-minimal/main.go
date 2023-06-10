@@ -52,32 +52,53 @@ func main() {
 		}
 	}
 
-	go func() { log.Fatal(echoServer()) }()
+	go func() { echoServer() }()
 	fmt.Println("Waiting before sending message...")
-	time.Sleep(3 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	err := clientMain()
 	if err != nil {
 		panic(err)
 	}
-
 }
 
-func echoServer() error {
+func echoServer() {
 	listener, err := quic.ListenAddr(addr, generateTLSConfig(), nil)
 	if err != nil {
-		return err
+		panic(err)
 	}
+	fmt.Println("Server: Waiting for request message...")
 	conn, err := listener.Accept(context.Background())
 	if err != nil {
-		return err
+		panic(err)
 	}
 	stream, err := conn.AcceptStream(context.Background())
 	if err != nil {
 		panic(err)
 	}
-	_, err = io.Copy(loggingWriter{stream}, stream)
-	return err
+
+	for {
+		request := readMessage(stream)
+		fmt.Printf("Server: Got message with payload '%s'\n", request)
+		response := fmt.Sprintf("response %s", request)
+		writeMessage(stream, response)
+	}
+}
+
+// Writes a string message with length prefix
+func writeMessage(stream quic.Stream, msg string) {
+	mbuflen := []byte{byte(len(msg))}
+	stream.Write(mbuflen)
+	stream.Write([]byte(msg))
+}
+
+// Reads a string message with length prefix
+func readMessage(stream quic.Stream) string {
+	mbuflen := []byte{0}
+	stream.Read(mbuflen)
+	mbuf := make([]byte, mbuflen[0])
+	stream.Read(mbuf)
+	return string(mbuf)
 }
 
 func clientMain() error {
@@ -98,28 +119,15 @@ func clientMain() error {
 
 	for i := 0; i < 3; i += 1 {
 		message := fmt.Sprintf("message %d", i)
-		fmt.Printf("Client: Sending '%s'\n", message)
-		_, err = stream.Write([]byte(message))
-		if err != nil {
-			return err
-		}
+		fmt.Printf("Client: Sending request message '%s'\n", message)
+		writeMessage(stream, message)
+		fmt.Println("Client: Wrote message, waiting for response...")
 
-		buf := make([]byte, len(message))
-		_, err = io.ReadFull(stream, buf)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("Client: Got '%s'\n", buf)
+		response := readMessage(stream)
+		fmt.Printf("Client: Got response message '%s'\n", response)
 	}
 
 	return nil
-}
-
-type loggingWriter struct{ io.Writer }
-
-func (w loggingWriter) Write(b []byte) (int, error) {
-	fmt.Printf("Server: Got '%s'\n", string(b))
-	return w.Writer.Write(b)
 }
 
 func generateTLSConfig() *tls.Config {
