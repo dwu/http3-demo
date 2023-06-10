@@ -1,29 +1,66 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"math/big"
+	"os"
+	"time"
 
 	"github.com/quic-go/quic-go"
+	"github.com/quic-go/quic-go/logging"
+	"github.com/quic-go/quic-go/qlog"
 )
 
 const addr = "localhost:4242"
 
+var keyLog io.Writer
+var qconf quic.Config
+
 func main() {
+	keyLogFile := flag.String("keylog", "", "key log file")
+	enableQlog := flag.Bool("qlog", false, "output a qlog (in the same directory)")
+	flag.Parse()
+
+	if len(*keyLogFile) > 0 {
+		f, err := os.Create(*keyLogFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+		keyLog = f
+	}
+
+	if *enableQlog {
+		qconf.Tracer = func(ctx context.Context, p logging.Perspective, connID quic.ConnectionID) logging.ConnectionTracer {
+			filename := fmt.Sprintf("client_%x.qlog", connID)
+			f, err := os.Create(filename)
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Printf("Creating qlog file %s.\n", filename)
+			return qlog.NewConnectionTracer(NewBufferedWriteCloser(bufio.NewWriter(f), f), p, connID)
+		}
+	}
+
 	go func() { log.Fatal(echoServer()) }()
+	fmt.Println("Waiting before sending message...")
+	time.Sleep(3 * time.Second)
 
 	err := clientMain()
 	if err != nil {
 		panic(err)
 	}
+
 }
 
 func echoServer() error {
@@ -47,8 +84,9 @@ func clientMain() error {
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: true,
 		NextProtos:         []string{"quic-echo-example"},
+		KeyLogWriter:       keyLog,
 	}
-	conn, err := quic.DialAddr(context.Background(), addr, tlsConf, nil)
+	conn, err := quic.DialAddr(context.Background(), addr, tlsConf, &qconf)
 	if err != nil {
 		return err
 	}
@@ -59,7 +97,7 @@ func clientMain() error {
 	}
 
 	for i := 0; i < 3; i += 1 {
-		message := fmt.Sprintf("response %d", i)
+		message := fmt.Sprintf("message %d", i)
 		fmt.Printf("Client: Sending '%s'\n", message)
 		_, err = stream.Write([]byte(message))
 		if err != nil {
