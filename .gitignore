@@ -1,5 +1,7 @@
 http3-client-go/http3-client-go
 http3-client-rust/target
 qpack-decoder/target
+quic-minimal/quic-minimal
+quic-minimal/*.qlog
 qlog/*
 keys
