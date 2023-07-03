@@ -1006,8 +1006,9 @@ QUIC IETF
 
 ## References
 
-- HTTP/3 RFC, https://www.rfc-editor.org/rfc/rfc9114.html
+- HTTP/3 RFC, <https://www.rfc-editor.org/rfc/rfc9114.html>
 - HTTP/3 explained, <https://http3-explained.haxx.se/>
+- QPACK Guide with visualization, <https://lianglouise.github.io/post/qpack_guide/>
 - qlog visualization, <https://qvis.quictools.info/#/files>
 - Curl with HTTP3 enabled, <https://github.com/yurymuski/curl-http3>
 - Quiche HTTP/3 client library, <https://github.com/cloudflare/quiche>
